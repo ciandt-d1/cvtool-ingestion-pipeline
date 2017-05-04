@@ -1,0 +1,4 @@
+  GoogleAppEngineMapReduce>=1.9.22.0
+  Flask>=0.10
+  git+https://github.com/ciandt-d1/cvtool-jobs-python-client.git
+  git+https://github.com/ciandt-d1/cvtool-images-python-client.git
