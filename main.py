@@ -1,17 +1,24 @@
 import logging
 
-from flask import Flask, redirect, request
-from mapreduce import mapreduce_pipeline
-
+from flask import Flask, redirect, request, jsonify
 from image_ingestion_client import CreateCsvIngestionJobRequest
 from image_processor import CreateCsvIngestionJob
+from mapreduce import mapreduce_pipeline
 
 app = Flask(__name__)
 
 
-@app.route('/')
-def hello():
-    return 'Hello World!'
+@app.route('/jobs', methods=['POST'])
+def trigger_csv_ingestion():
+    json = request.get_json(force=True)
+    ingestion_request = CreateCsvIngestionJobRequest.from_dict(json)
+    pipeline = CreateCsvIngestionJob(ingestion_request=ingestion_request.to_dict())
+    pipeline.start()
+    return jsonify(
+        ingestion_request=json,
+        pipeline_id=pipeline.pipeline_id,
+        pipeline_results_uri="%s/status?root=%s" % (pipeline.base_path, pipeline.pipeline_id)
+    )
 
 
 @app.route('/start')
@@ -20,7 +27,6 @@ def start():
     tenant_id = request.args.get('tenant_id')
     project_id = request.args.get('project_id')
     csv_uri = str(request.args.get('csv_uri'))
-
     ingestion_request = CreateCsvIngestionJobRequest(tenant_id, project_id, csv_uri, job_id)
     pipeline = CreateCsvIngestionJob(ingestion_request=ingestion_request.to_dict())
     pipeline.start()
