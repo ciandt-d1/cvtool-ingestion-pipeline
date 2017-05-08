@@ -13,7 +13,7 @@ def trigger_csv_ingestion():
     json = request.get_json(force=True)
     ingestion_request = CreateCsvIngestionJobRequest.from_dict(json)
     pipeline = CreateCsvIngestionJob(ingestion_request=ingestion_request.to_dict())
-    pipeline.start()
+    pipeline.start(idempotence_key=ingestion_request.job_id, queue_name='default')
     return jsonify(
         ingestion_request=json,
         pipeline_id=pipeline.pipeline_id,

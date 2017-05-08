@@ -16,4 +16,4 @@ VERSION="${2:-}"
 
 source ${__dir}/settings.bash
 envsubst < ${__dir}/app.yaml.tpl > ${__dir}/app.yaml
-gcloud app deploy --project ${PROJECT_ID} --version ${VERSION} app.yaml
+yes | gcloud app deploy --project ${PROJECT_ID} --version ${VERSION} --verbosity=info app.yaml

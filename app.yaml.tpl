@@ -21,9 +21,8 @@ skip_files:
 - ^(.*/)?.*/RCS/.*$
 - ^(.*/)?\..*$
 - ^(.*/)?\.bak$
-- costarica-moths/.*
+- ^(.*/)?\.sh$
 - \.idea/.*
-# - ^venv/.*
 
 libraries:
 - name: ssl
