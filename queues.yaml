@@ -1,6 +1,0 @@
-queue:
-- name: cvtool-image-ingestion
-  rate: 10/s
-  retry_parameters:
-    task_retry_limit: 3
-    task_age_limit: 1d
