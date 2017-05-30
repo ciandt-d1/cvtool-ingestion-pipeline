@@ -22,7 +22,8 @@ skip_files:
 - ^(.*/)?\..*$
 - ^(.*/)?\.bak$
 - ^(.*/)?\.sh$
-- \.idea/.*
+- ^venv$
+- \.idea/.*$
 
 libraries:
 - name: ssl
