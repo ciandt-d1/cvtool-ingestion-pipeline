@@ -18,7 +18,25 @@ def new_image(tenant_id, project_id, job_id, original_uri, exif_annotations):
         api_response = api_instance.add(tenant_id, project_id, new_image_request)
         return api_response
     except ApiException as e:
-        logging.error("Exception when calling JobApi->create: %s\n" % e)
+        logging.error("Exception when calling ImageApi->add: %s\n" % e)
+
+
+def count(tenant_id, project_id):
+    try:
+        api_response = api_instance.list_all(tenant_id, project_id, offset=0, limit=1)
+        return api_response.meta.total
+    except ApiException as e:
+        logging.error("Exception when calling ImageApi->list_all: %s\n" % e)
+        raise e
+
+
+def get(tenant_id, project_id, offset, limit):
+    try:
+        api_response = api_instance.list_all(tenant_id, project_id, offset=offset, limit=limit)
+        return api_response
+    except ApiException as e:
+        logging.error("Exception when calling ImageApi->list_all: %s\n" % e)
+        raise e
 
 
 def annotation_from_row(headers, row):

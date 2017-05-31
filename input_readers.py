@@ -1,5 +1,6 @@
 from __future__ import with_statement
-#!/usr/bin/env python
+
+# !/usr/bin/env python
 #
 # Copyright 2012 cloudysunny14
 #
@@ -25,35 +26,36 @@ import logging
 import cloudstorage
 from mapreduce import input_readers
 from mapreduce import errors
+from mapreduce.errors import BadReaderParamsError
 
 Error = errors.Error
 BadReaderParamsError = errors.BadReaderParamsError
 
 
 class GoogleStorageLineInputReader(input_readers.InputReader):
-  """Input reader for files from a stored in the GoogleCloudStorage.
+    """Input reader for files from a stored in the GoogleCloudStorage.
 
   You requires activate the google cloud storage and create bucket.
   The class shouldn't be instantiated directly. Use the split_input
   class method instead.
   """
 
-  # Maximum number of shards to allow.
-  _MAX_SHARD_COUNT = 256
+    # Maximum number of shards to allow.
+    _MAX_SHARD_COUNT = 256
 
-  # Maximum number of file path
-  _MAX_FILE_PATHS_COUNT = 1
+    # Maximum number of file path
+    _MAX_FILE_PATHS_COUNT = 1
 
-  # Mapreduce parameters.
-  FILE_PATHS_PARAM = "file_paths"
-  # Serialyzation parameters.
-  INITIAL_POSITION_PARAM = "initial_position"
-  START_POSITION_PARAM = "start_position"
-  END_POSITION_PARAM = "end_position"
-  FILE_PATH_PARAM = "file_path"
+    # Mapreduce parameters.
+    FILE_PATHS_PARAM = "file_paths"
+    # Serialyzation parameters.
+    INITIAL_POSITION_PARAM = "initial_position"
+    START_POSITION_PARAM = "start_position"
+    END_POSITION_PARAM = "end_position"
+    FILE_PATH_PARAM = "file_path"
 
-  def __init__(self, file_path, start_position, end_position):
-    """Initializes this instance with the given file path and character range.
+    def __init__(self, file_path, start_position, end_position):
+        """Initializes this instance with the given file path and character range.
 
     This GoogleStorageLineInputReader will read from the first record starting
     after strictly after start_position until the first record ending at or
@@ -65,15 +67,15 @@ class GoogleStorageLineInputReader(input_readers.InputReader):
       start_position: the position to start reading at.
       end_position: a position in the last record to read.
     """
-    self._file_path = file_path
-    self._start_position = start_position
-    self._end_position = end_position
-    self._has_iterated = False
-    self._filestream = None
+        self._file_path = file_path
+        self._start_position = start_position
+        self._end_position = end_position
+        self._has_iterated = False
+        self._filestream = None
 
-  @classmethod
-  def validate(cls, mapper_spec):
-    """Validates mapper spec and all mapper parameters.
+    @classmethod
+    def validate(cls, mapper_spec):
+        """Validates mapper spec and all mapper parameters.
 
     Args:
       mapper_spec: The MapperSpec for this InputReader.
@@ -81,31 +83,31 @@ class GoogleStorageLineInputReader(input_readers.InputReader):
     Raises:
       BadReaderParamsError: required parameters are missing or invalid.
     """
-    if mapper_spec.input_reader_class() != cls:
-      raise BadReaderParamsError("Mapper input reader class mismatch")
+        if mapper_spec.input_reader_class() != cls:
+            raise BadReaderParamsError("Mapper input reader class mismatch")
 
-    params = _get_params(mapper_spec)
+        params = _get_params(mapper_spec)
 
-    # import pdb; pdb.set_trace()
-    if cls.FILE_PATHS_PARAM not in params:
-      raise BadReaderParamsError("Must specify 'file_path' for mapper input")
+        # import pdb; pdb.set_trace()
+        if cls.FILE_PATHS_PARAM not in params:
+            raise BadReaderParamsError("Must specify 'file_path' for mapper input")
 
-    file_paths = params[cls.FILE_PATHS_PARAM]
+        file_paths = params[cls.FILE_PATHS_PARAM]
 
-    if isinstance(file_paths, basestring):
-      # This is a mechanism to allow multiple file paths (which do not contain
-      # commas) in a single string. It may go away.
-      file_paths = file_paths.split(",")
+        if isinstance(file_paths, basestring):
+            # This is a mechanism to allow multiple file paths (which do not contain
+            # commas) in a single string. It may go away.
+            file_paths = file_paths.split(",")
 
-    if len(file_paths) > cls._MAX_FILE_PATHS_COUNT:
-      raise BadReaderParamsError("Too many 'file_paths' for mapper input")
+        if len(file_paths) > cls._MAX_FILE_PATHS_COUNT:
+            raise BadReaderParamsError("Too many 'file_paths' for mapper input")
 
-    if not file_paths:
-      raise BadReaderParamsError("No 'file_paths' specified for mapper input")
+        if not file_paths:
+            raise BadReaderParamsError("No 'file_paths' specified for mapper input")
 
-  @classmethod
-  def split_input(cls, mapper_spec):
-    """Returns a list of shard_count input_spec_shards for input_spec.
+    @classmethod
+    def split_input(cls, mapper_spec):
+        """Returns a list of shard_count input_spec_shards for input_spec.
 
     Args:
       mapper_spec: The mapper specification to split from. Must contain
@@ -115,96 +117,96 @@ class GoogleStorageLineInputReader(input_readers.InputReader):
       A list of GoogleStorageLineInputReader corresponding to the
       specified shards.
     """
-    params = _get_params(mapper_spec)
-    file_paths = params[cls.FILE_PATHS_PARAM]
+        params = _get_params(mapper_spec)
+        file_paths = params[cls.FILE_PATHS_PARAM]
 
-    if isinstance(file_paths, basestring):
-      # This is a mechanism to allow multiple file paths (which do not contain
-      # commas) in a single string. It may go away.
-      file_paths = file_paths.split(",")
+        if isinstance(file_paths, basestring):
+            # This is a mechanism to allow multiple file paths (which do not contain
+            # commas) in a single string. It may go away.
+            file_paths = file_paths.split(",")
 
-    file_sizes = {}
+        file_sizes = {}
 
-    for file_path in file_paths:
-      fstat = cloudstorage.stat(file_path)
-      file_sizes[file_path] = fstat.st_size
+        for file_path in file_paths:
+            fstat = cloudstorage.stat(file_path)
+            file_sizes[file_path] = fstat.st_size
 
-    shard_count = min(cls._MAX_SHARD_COUNT, mapper_spec.shard_count)
-    shards_per_file = shard_count // len(file_paths)
+        shard_count = min(cls._MAX_SHARD_COUNT, mapper_spec.shard_count)
+        shards_per_file = shard_count // len(file_paths)
 
-    if shards_per_file == 0:
-      shards_per_file = 1
+        if shards_per_file == 0:
+            shards_per_file = 1
 
-    chunks = []
+        chunks = []
 
-    for file_path, file_size in file_sizes.items():
-      file_chunk_size = file_size // shards_per_file
-      for i in xrange(shards_per_file - 1):
-        chunks.append(GoogleStorageLineInputReader.from_json(
-            {cls.FILE_PATH_PARAM: file_path,
-             cls.INITIAL_POSITION_PARAM: file_chunk_size * i,
-             cls.END_POSITION_PARAM: file_chunk_size * (i + 1)}))
-      chunks.append(GoogleStorageLineInputReader.from_json(
-          {cls.FILE_PATH_PARAM: file_path,
-           cls.INITIAL_POSITION_PARAM: file_chunk_size * (shards_per_file - 1),
-           cls.END_POSITION_PARAM: file_size}))
+        for file_path, file_size in file_sizes.items():
+            file_chunk_size = file_size // shards_per_file
+            for i in xrange(shards_per_file - 1):
+                chunks.append(GoogleStorageLineInputReader.from_json(
+                    {cls.FILE_PATH_PARAM: file_path,
+                     cls.INITIAL_POSITION_PARAM: file_chunk_size * i,
+                     cls.END_POSITION_PARAM: file_chunk_size * (i + 1)}))
+            chunks.append(GoogleStorageLineInputReader.from_json(
+                {cls.FILE_PATH_PARAM: file_path,
+                 cls.INITIAL_POSITION_PARAM: file_chunk_size * (shards_per_file - 1),
+                 cls.END_POSITION_PARAM: file_size}))
 
-    return chunks
+        return chunks
 
-  def next(self):
-    """Returns the next input from as an (offset, line) tuple."""
-    self._has_iterated = True
+    def next(self):
+        """Returns the next input from as an (offset, line) tuple."""
+        self._has_iterated = True
 
-    if not self._filestream:
-      self._filestream = cloudstorage.open(self._file_path)
-      if self._start_position:
-        self._filestream.seek(self._start_position)
-        self._filestream.readline()
+        if not self._filestream:
+            self._filestream = cloudstorage.open(self._file_path)
+            if self._start_position:
+                self._filestream.seek(self._start_position)
+                self._filestream.readline()
 
-    start_position = self._filestream.tell()
+        start_position = self._filestream.tell()
 
-    if start_position > self._end_position:
-      raise StopIteration()
+        if start_position > self._end_position:
+            raise StopIteration()
 
-    line = self._filestream.readline()
+        line = self._filestream.readline()
 
-    if not line:
-      raise StopIteration()
+        if not line:
+            raise StopIteration()
 
-    return start_position, line.rstrip("\n")
+        return start_position, line.rstrip("\n")
 
-  def _next_offset(self):
-    """Return the offset of the next line to read."""
-    if self._filestream:
-      offset = self._filestream.tell()
-      if offset:
-        offset -= 1
-    else:
-      offset = self._start_position
+    def _next_offset(self):
+        """Return the offset of the next line to read."""
+        if self._filestream:
+            offset = self._filestream.tell()
+            if offset:
+                offset -= 1
+        else:
+            offset = self._start_position
 
-    return offset
+        return offset
 
-  def to_json(self):
-    """Returns an json-compatible input shard spec for remaining inputs."""
-    return {self.FILE_PATH_PARAM: self._file_path,
-            self.INITIAL_POSITION_PARAM: self._next_offset(),
-            self.END_POSITION_PARAM: self._end_position}
+    def to_json(self):
+        """Returns an json-compatible input shard spec for remaining inputs."""
+        return {self.FILE_PATH_PARAM: self._file_path,
+                self.INITIAL_POSITION_PARAM: self._next_offset(),
+                self.END_POSITION_PARAM: self._end_position}
 
-  def __str__(self):
-    """Returns the string representation of this GoogleStorageLineInputReader."""
-    return "FilePath(%r):[%d, %d]" % (
-        self._file_path, self._next_offset(), self._end_position)
+    def __str__(self):
+        """Returns the string representation of this GoogleStorageLineInputReader."""
+        return "FilePath(%r):[%d, %d]" % (
+            self._file_path, self._next_offset(), self._end_position)
 
-  @classmethod
-  def from_json(cls, json):
-    """Instantiates an instance of this InputReader for the given shard spec."""
-    return cls(json[cls.FILE_PATH_PARAM],
-               json[cls.INITIAL_POSITION_PARAM],
-               json[cls.END_POSITION_PARAM])
+    @classmethod
+    def from_json(cls, json):
+        """Instantiates an instance of this InputReader for the given shard spec."""
+        return cls(json[cls.FILE_PATH_PARAM],
+                   json[cls.INITIAL_POSITION_PARAM],
+                   json[cls.END_POSITION_PARAM])
 
 
 def _get_params(mapper_spec, allowed_keys=None):
-  """Obtain input reader parameters.
+    """Obtain input reader parameters.
 
   Utility function for input readers implementation. Fetches parameters
   from mapreduce specification giving appropriate usage warnings.
@@ -221,25 +223,128 @@ def _get_params(mapper_spec, allowed_keys=None):
   Raises:
     BadReaderParamsError: if parameters are invalid/missing or not allowed.
   """
-  if "input_reader" not in mapper_spec.params:
-    message = ("Input reader's parameters should be specified in "
-               "input_reader subdictionary.")
-    if allowed_keys:
-      raise errors.BadReaderParamsError(message)
+    if "input_reader" not in mapper_spec.params:
+        message = ("Input reader's parameters should be specified in "
+                   "input_reader subdictionary.")
+        if allowed_keys:
+            raise errors.BadReaderParamsError(message)
+        else:
+            logging.warning(message)
+        params = mapper_spec.params
+        params = dict((str(n), v) for n, v in params.iteritems())
     else:
-      logging.warning(message)
-    params = mapper_spec.params
-    params = dict((str(n), v) for n, v in params.iteritems())
-  else:
-    if not isinstance(mapper_spec.params.get("input_reader"), dict):
-      raise BadReaderParamsError(
-          "Input reader parameters should be a dictionary")
-    params = mapper_spec.params.get("input_reader")
-    params = dict((str(n), v) for n, v in params.iteritems())
-    if allowed_keys:
-      params_diff = set(params.keys()) - allowed_keys
-      if params_diff:
-        raise errors.BadReaderParamsError(
-            "Invalid input_reader parameters: %s" % ",".join(params_diff))
+        if not isinstance(mapper_spec.params.get("input_reader"), dict):
+            raise BadReaderParamsError(
+                "Input reader parameters should be a dictionary")
+        params = mapper_spec.params.get("input_reader")
+        params = dict((str(n), v) for n, v in params.iteritems())
+        if allowed_keys:
+            params_diff = set(params.keys()) - allowed_keys
+            if params_diff:
+                raise errors.BadReaderParamsError(
+                    "Invalid input_reader parameters: %s" % ",".join(params_diff))
 
-  return params
+    return params
+
+
+class ImageInputReader(input_readers.InputReader):
+
+    TENANT_ID_PARAM = 'tenant_id'
+    PROJECT_ID_PARAM = 'project_id'
+    OFFSET_PARAM = 'offset'
+    LIMIT_PARAM = 'limit'
+
+    MAX_IMAGE_BATCH_SIZE = 100
+
+    def __init__(self, tenant_id, project_id=None, offset=None, limit=None, total=None):
+        super(ImageInputReader, self).__init__()
+        self.tenant_id = tenant_id
+        self.project_id = project_id
+        self.offset = offset
+        self.limit = limit if limit else self.MAX_IMAGE_BATCH_SIZE
+        self.total = total
+
+    def next(self):
+        from images import get
+        image_list = get(self.tenant_id, self.project_id, self.offset, self.limit)
+        return image_list.to_dict()
+
+    @classmethod
+    def from_json(cls, input_shard_state):
+        return cls(input_shard_state.get(cls.TENANT_ID_PARAM),
+                   input_shard_state.get(cls.PROJECT_ID_PARAM),
+                   input_shard_state.get(cls.OFFSET_PARAM),
+                   input_shard_state.get(cls.LIMIT_PARAM))
+
+    def to_json(self):
+        """Returns an input shard state for the remaining inputs.
+    Returns:
+      A json-izable version of the remaining InputReader.
+    """
+        return {self.TENANT_ID_PARAM: self.tenant_id,
+                self.PROJECT_ID_PARAM: self.project_id,
+                self.OFFSET_PARAM: self.offset,
+                self.LIMIT_PARAM: self.limit}
+
+    @classmethod
+    def split_input(cls, mapper_spec):
+        """
+        Returns a list of input readers
+        """
+        from images import count
+
+        shard_count = mapper_spec.shard_count
+        params = _get_params(mapper_spec)
+        tenant_id = params[cls.TENANT_ID_PARAM]
+        project_id = params[cls.PROJECT_ID_PARAM]
+        offset = int(params[cls.OFFSET_PARAM])
+        limit = int(params[cls.LIMIT_PARAM])
+        total_images = count(tenant_id, project_id)
+
+        shards_per_batch = shard_count // total_images
+        if shards_per_batch == 0:
+            shards_per_batch = 1
+
+
+        total_batches = total_images // shard_count // limit
+
+
+        chunks = []
+        for i in xrange(total_batches - 1):
+            chunks.append(cls(tenant_id, project_id, offset=offset, limit=limit, total=total_images))
+            offset += limit
+
+        return chunks
+
+    @classmethod
+    def validate(cls, mapper_spec):
+        """
+        Validates mapper spec and all mapper parameters.
+
+        Input reader parameters are expected to be passed as "input_reader"
+        subdictionary in mapper_spec.params.
+
+        Args:
+          mapper_spec: The MapperSpec for this InputReader.
+
+        Raises:
+          BadReaderParamsError: required parameters are missing or invalid.
+        """
+        if mapper_spec.input_reader_class() != cls:
+            raise BadReaderParamsError("Input reader class mismatch")
+
+        # Check that a valid queue is specified
+        input_reader_params = mapper_spec.params.get('input_reader', {})
+        tenant_id = input_reader_params.get(cls.TENANT_ID_PARAM)
+
+        offset = input_reader_params.get(cls.OFFSET_PARAM)
+        limit = input_reader_params.get(cls.LIMIT_PARAM, cls.MAX_IMAGE_BATCH_SIZE)
+
+        if not tenant_id:
+            raise BadReaderParamsError('%s is required' % cls.TENANT_ID_PARAM)
+
+        if not isinstance(offset, int):
+            raise BadReaderParamsError('%s must be an integer' % cls.OFFSET_PARAM)
+
+        if not isinstance(limit, int):
+            raise BadReaderParamsError('%s must be an integer' % cls.LIMIT_PARAM)
