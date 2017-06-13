@@ -5,8 +5,8 @@ from google.appengine.api import app_identity
 import cloudstorage as gcs
 import exifread
 from image_ingestion_client import CreateCsvIngestionJobRequest
-from images import new_image
-from jobs import start_job, end_job
+from api_client.images import new_image
+from api_client.jobs import start_job, end_job
 from mapreduce import base_handler, mapreduce_pipeline, context
 
 log = logging.getLogger(__name__)
@@ -61,11 +61,14 @@ def ingest_image_mapper(row):
         exif_annotations = None
         if image_original_uri.startswith('gs://'):
             with gcs.open(image_original_uri[4:], read_buffer_size=1024) as image:
-                exif_annotations = exifread.process_file(image, details=False)
-                log.debug('EXIF %s:', exif_annotations)
+                try:
+                    exif_annotations = exifread.process_file(image, details=False)
+                    log.debug('EXIF %s:', exif_annotations)
+                except:
+                    log.warning('Error extracting EXIF tags.')
 
         ingestion_request = CreateCsvIngestionJobRequest.from_dict(mapper_params.get('ingestion_request', dict()))
-        image = new_image(ingestion_request.tenant_id, ingestion_request.project_id, ingestion_request.job_id,
+        image = new_image(ingestion_request.tenant_id, ingestion_request.job_id,
                           image_original_uri, exif_annotations)
 
         log.debug('Got image %s:', image)
